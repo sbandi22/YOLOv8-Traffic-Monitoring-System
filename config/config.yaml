@@ -1,0 +1,145 @@
+# ============================================================================
+# YOLOv8 Traffic Monitoring System - Central Configuration
+# ============================================================================
+
+app:
+  name: "YOLOv8 Traffic Monitoring System"
+  version: "1.0.0"
+  environment: "production"   # development | staging | production
+
+# ----------------------------------------------------------------------------
+# Detector
+# ----------------------------------------------------------------------------
+detector:
+  weights: "models/weights/yolov8n.pt"
+  device: "cuda:0"            # "cpu" | "cuda:0" | "mps"
+  half: true                  # FP16 inference
+  imgsz: 640
+  conf: 0.35
+  iou: 0.5
+  max_det: 300
+  agnostic_nms: false
+  # COCO IDs for vehicle classes
+  classes: [1, 2, 3, 5, 7]    # bicycle, car, motorbike, bus, truck
+  class_names:
+    1: "bicycle"
+    2: "car"
+    3: "motorbike"
+    5: "bus"
+    7: "truck"
+
+# ----------------------------------------------------------------------------
+# Tracker
+# ----------------------------------------------------------------------------
+tracker:
+  type: "bytetrack"           # bytetrack | deepsort
+  max_age: 30
+  min_hits: 3
+  iou_threshold: 0.3
+  track_buffer: 30
+  match_thresh: 0.8
+
+# ----------------------------------------------------------------------------
+# Video source
+# ----------------------------------------------------------------------------
+video:
+  source: "data/videos/raw/sample.mp4"
+  resize_width: 1280
+  resize_height: 720
+  target_fps: 25
+  buffer_size: 8
+  loop: false
+
+# ----------------------------------------------------------------------------
+# Region of interest & virtual lines for counting
+# ----------------------------------------------------------------------------
+roi:
+  enabled: true
+  polygon: [[100, 360], [1180, 360], [1180, 700], [100, 700]]
+
+counting_lines:
+  - id: "line_north_south"
+    points: [[200, 500], [1080, 500]]
+    direction: "vertical"
+  - id: "line_east_west"
+    points: [[640, 200], [640, 700]]
+    direction: "horizontal"
+
+# ----------------------------------------------------------------------------
+# Lanes (polygonal)
+# ----------------------------------------------------------------------------
+lanes:
+  - id: "lane_1"
+    polygon: [[100, 360], [420, 360], [380, 720], [50, 720]]
+  - id: "lane_2"
+    polygon: [[420, 360], [740, 360], [780, 720], [380, 720]]
+  - id: "lane_3"
+    polygon: [[740, 360], [1060, 360], [1180, 720], [780, 720]]
+
+# ----------------------------------------------------------------------------
+# Speed estimation
+# ----------------------------------------------------------------------------
+speed:
+  enabled: true
+  # Pixels-per-meter calibration (used when no homography given)
+  pixels_per_meter: 8.0
+  smoothing_window: 5
+  # Optional homography: 4 image points -> 4 world points (meters)
+  homography:
+    enabled: false
+    image_points: [[300, 400], [980, 400], [1100, 700], [180, 700]]
+    world_points: [[0, 0], [10, 0], [10, 25], [0, 25]]
+
+# ----------------------------------------------------------------------------
+# Congestion detection
+# ----------------------------------------------------------------------------
+congestion:
+  enabled: true
+  density_threshold: 0.55     # 0..1 of ROI occupancy
+  avg_speed_threshold: 8.0    # km/h - below this counts as slow
+  window_seconds: 10
+  hotspot_grid: [8, 8]        # heatmap grid for hotspot extraction
+  hotspot_top_k: 3
+
+# ----------------------------------------------------------------------------
+# Heatmap
+# ----------------------------------------------------------------------------
+heatmap:
+  enabled: true
+  decay: 0.985
+  blur_kernel: 31
+  alpha: 0.5
+  colormap: "JET"             # OpenCV colormap name
+
+# ----------------------------------------------------------------------------
+# API & Dashboard
+# ----------------------------------------------------------------------------
+api:
+  host: "0.0.0.0"
+  port: 8000
+  cors_origins: ["*"]
+  websocket_jpeg_quality: 70
+
+dashboard:
+  api_base_url: "http://localhost:8000"
+  refresh_seconds: 2
+
+# ----------------------------------------------------------------------------
+# Storage
+# ----------------------------------------------------------------------------
+storage:
+  reports_dir: "outputs/reports"
+  heatmaps_dir: "outputs/heatmaps"
+  annotated_videos_dir: "outputs/videos"
+  database_url: "sqlite:///outputs/analytics.db"
+  redis_url: "redis://localhost:6379/0"
+
+# ----------------------------------------------------------------------------
+# Logging
+# ----------------------------------------------------------------------------
+logging:
+  level: "INFO"
+  file: "logs/traffic.log"
+  rotation: "20 MB"
+  retention: "14 days"
+  json: true
