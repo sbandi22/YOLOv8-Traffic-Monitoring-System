@@ -1,0 +1,43 @@
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: traffic-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+
+  api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      args:
+        BASE: cpu
+    image: yolov8-traffic:cpu
+    container_name: traffic-api
+    restart: unless-stopped
+    command: ["api"]
+    environment:
+      - APP_CONFIG=/app/config/config.yaml
+      - REDIS_URL=redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./outputs:/app/outputs
+      - ./logs:/app/logs
+      - ./models:/app/models
+      - ./config:/app/config
+    depends_on:
+      - redis
+
+  dashboard:
+    image: yolov8-traffic:cpu
+    container_name: traffic-dashboard
+    restart: unless-stopped
+    command: ["dashboard"]
+    environment:
+      - API_BASE_URL=http://api:8000
+    ports:
+      - "8501:8501"
+    depends_on:
+      - api
